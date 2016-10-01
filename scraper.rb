@@ -10,13 +10,13 @@ require 'pry'
 module Wikisnakker
   class Item
     QUALIFIERS = {
-      P102: :party,
-      P155: :follows,
-      P156: :followed_by,
-      P580: :start_date,
-      P582: :end_date,
-      P642: :of,
-      P768: :constituency,
+      P102:  :party,
+      P155:  :follows,
+      P156:  :followed_by,
+      P580:  :start_date,
+      P582:  :end_date,
+      P642:  :of,
+      P768:  :constituency,
       P1365: :replaces,
       P1366: :replaced_by,
       P2937: :term,
@@ -27,8 +27,8 @@ module Wikisnakker
       self.P39s.map do |posn|
         quals = posn.qualifiers
         qdata = quals.properties.partition { |p| QUALIFIERS[p] }
-        qgood = qdata.first.map { |p| [ QUALIFIERS[p], quals[p].value.to_s ] }.to_h
-        warn "#{id}: #{posn.value.id} + unknown #{qdata.last.join(", ")}" unless qdata.last.empty?
+        qgood = qdata.first.map { |p| [QUALIFIERS[p], quals[p].value.to_s] }.to_h
+        warn "#{id}: #{posn.value.id} + unknown #{qdata.last.join(', ')}" unless qdata.last.empty?
 
         {
           id:          id,
@@ -62,7 +62,6 @@ module Wikidata
     end
   end
 end
-
 
 house = EveryPolitician::Index.new.country('Estonia').legislature('Riigikogu')
 wanted = house.popolo.persons.map(&:wikidata).compact
