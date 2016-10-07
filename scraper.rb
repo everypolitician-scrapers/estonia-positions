@@ -35,6 +35,7 @@ module Wikisnakker
           position:    posn.value.id,
           label:       posn.value.to_s,
           description: posn.value.description(:en).to_s,
+          start_date:  '' # need _something_ here so we can key on it
         }.merge(qgood) rescue {}
       end
     end
@@ -66,4 +67,4 @@ end
 house = EveryPolitician::Index.new.country('Estonia').legislature('Riigikogu')
 wanted = house.popolo.persons.map(&:wikidata).compact
 data = Wikidata::Positions.new(ids: wanted).positions
-warn data
+ScraperWiki.save_sqlite(%i(id position start_date), data)
