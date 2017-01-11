@@ -64,7 +64,7 @@ module Wikidata
   end
 end
 
-house = EveryPolitician::Index.new.country('Estonia').legislature('Riigikogu')
+house = EveryPolitician::Index.new.country('Estonia').lower_house
 wanted = house.popolo.persons.map(&:wikidata).compact
 data = Wikidata::Positions.new(ids: wanted).positions
 ScraperWiki.save_sqlite(%i(id position start_date), data)
