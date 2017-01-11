@@ -1,9 +1,10 @@
 GIT
   remote: https://github.com/everypolitician/everypolitician-ruby.git
-  revision: fca557a65ca09ae9da105d8bff53e97e3ebcfdc1
+  revision: 20582b1512358a0e8789ea289201e37ab5f085c2
   specs:
-    everypolitician (0.18.0)
-      everypolitician-popolo
+    everypolitician (0.20.0)
+      everypolitician-popolo (>= 0.8.0)
+      require_all
 
 GIT
   remote: https://github.com/everypolitician/wikisnakker.git
@@ -25,8 +26,8 @@ GEM
   specs:
     ast (2.3.0)
     coderay (1.1.0)
-    colorize (0.7.7)
-    everypolitician-popolo (0.6.1)
+    everypolitician-popolo (0.8.0)
+      require_all
     httpclient (2.6.0.1)
     method_source (0.8.2)
     parser (2.3.1.2)
@@ -37,6 +38,7 @@ GEM
       method_source (~> 0.8.1)
       slop (~> 3.4)
     rainbow (2.1.0)
+    require_all (1.4.0)
     rubocop (0.42.0)
       parser (>= 2.3.1.1, < 3.0)
       powerpack (~> 0.1)
@@ -54,7 +56,6 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  colorize
   everypolitician!
   pry
   rubocop
@@ -62,7 +63,7 @@ DEPENDENCIES
   wikisnakker!
 
 RUBY VERSION
-   ruby 2.0.0p353
+   ruby 2.3.3p222
 
 BUNDLED WITH
-   1.12.5
+   1.13.6
