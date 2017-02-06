@@ -4,12 +4,12 @@
 
 require 'everypolitician'
 require 'scraperwiki'
-
 require 'pry'
+require 'wikisnakker'
 
 module Wikisnakker
-  class Item
-    QUALIFIERS = {
+  class Politician < Item
+    P39_QUALIFIERS = {
       P102:  :party,
       P155:  :follows,
       P156:  :followed_by,
@@ -28,10 +28,10 @@ module Wikisnakker
       return [] if self.P39s.empty?
       self.P39s.map do |posn|
         quals = posn.qualifiers
-        qdata = quals.properties.partition { |p| QUALIFIERS[p] }
-        qgood = qdata.first.map { |p| [QUALIFIERS[p], quals[p].value.to_s] }.to_h
+        qdata = quals.properties.partition { |p| P39_QUALIFIERS[p] }
         warn "#{id}: #{posn.value.id} + unknown #{qdata.last.join(', ')}" unless qdata.last.empty?
 
+        qgood = qdata.first.map { |p| [P39_QUALIFIERS[p], quals[p].value.to_s] }.to_h
         {
           id:          id,
           position:    posn.value.id,
@@ -46,5 +46,5 @@ end
 
 house = EveryPolitician::Index.new.country('Estonia').lower_house
 wanted = house.popolo.persons.map(&:wikidata).compact
-data = Wikisnakker::Item.find(wanted).flat_map(&:positions).compact
+data = Wikisnakker::Politician.find(wanted).flat_map(&:positions).compact
 ScraperWiki.save_sqlite(%i(id position start_date), data)
