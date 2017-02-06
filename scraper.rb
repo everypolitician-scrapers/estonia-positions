@@ -44,29 +44,7 @@ module Wikisnakker
   end
 end
 
-module Wikidata
-  require 'wikisnakker'
-
-  class Positions
-    def initialize(ids:)
-      @ids = ids
-    end
-
-    def positions
-      wikisnakker_items.flat_map(&:positions).compact
-    end
-
-    private
-
-    attr_reader :ids
-
-    def wikisnakker_items
-      @wsitems ||= Wikisnakker::Item.find(ids)
-    end
-  end
-end
-
 house = EveryPolitician::Index.new.country('Estonia').lower_house
 wanted = house.popolo.persons.map(&:wikidata).compact
-data = Wikidata::Positions.new(ids: wanted).positions
+data = Wikisnakker::Item.find(wanted).flat_map(&:positions).compact
 ScraperWiki.save_sqlite(%i(id position start_date), data)
