@@ -13,12 +13,14 @@ module Wikisnakker
       P102:  :party,
       P155:  :follows,
       P156:  :followed_by,
+      P194:  :body,
       P580:  :start_date,
       P582:  :end_date,
       P642:  :of,
       P768:  :constituency,
       P1365: :replaces,
       P1366: :replaced_by,
+      P2715: :election,
       P2937: :term,
     }.freeze
 
