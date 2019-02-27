@@ -1,49 +1,76 @@
 # frozen_string_literal: true
 
-# TODO: extending Scraped::Scraper with ability to add Strategies
-module Scraped
-  class Request
-    class Strategy
-      class LiveRequest
-        require 'rest-client'
+# TODO: extend Scraped::Scraper with ability to add Strategies
+class Scraped::Request::Strategy::LiveRequest
+  require 'rest-client'
 
-        def url
-          SPARQL_URL % CGI.escape(QUERY % @url)
-        end
+  def url
+    SPARQL_URL % CGI.escape(raw_query)
+  end
 
-        private
+  private
 
-        def sparql(query)
-          result = RestClient.get WIKIDATA_SPARQL_URL, accept: 'text/csv', params: { query: query }
-          CSV.parse(result, headers: true, header_converters: :symbol)
-        rescue RestClient::Exception => e
-          raise "Wikidata query #{query} failed: #{e.message}"
-        end
+  SPARQL_URL = 'https://query.wikidata.org/sparql?format=json&query=%s'
 
-        SPARQL_URL = 'https://query.wikidata.org/sparql?format=json&query=%s'
+  QUERY = <<~SPARQL
+    SELECT DISTINCT ?ps ?item ?itemLabel ?minister ?ministerLabel ?ordinal ?start ?startprecision ?end ?endprecision ?cabinet ?cabinetLabel {
+      {
+        SELECT DISTINCT ?ps ?item ?minister ?ordinal ?start ?startprecision ?end ?endprecision ?cabinet {
+          ?item p:P39/ps:P39/wdt:P279* wd:%s .
+          ?item p:P39 ?ps .
+          ?ps ps:P39 ?minister .
+          ?minister wdt:P279* wd:Q83307 .
+          OPTIONAL { ?ps pq:P1545 ?ordinal }
+          OPTIONAL { ?ps pqv:P580 [wikibase:timeValue ?start ; wikibase:timePrecision ?startprecision ] }
+          OPTIONAL { ?ps pqv:P582 [wikibase:timeValue ?end   ; wikibase:timePrecision ?endprecision ] }
 
-        QUERY = <<~SPARQL
-          SELECT DISTINCT ?ps ?item ?itemLabel ?minister ?ministerLabel ?ordinal ?start ?end ?cabinet ?cabinetLabel
-          WHERE {
-            ?item p:P39/ps:P39/wdt:P279* wd:%s .
-            ?item p:P39 ?ps .
-            ?ps ps:P39 ?minister .
-            ?minister wdt:P279* wd:Q83307 .
-            OPTIONAL { ?ps pq:P1545 ?ordinal }
-            OPTIONAL { ?ps pq:P580  ?start }
-            OPTIONAL { ?ps pq:P582  ?end }
-            OPTIONAL { ?ps pq:P5054 ?cabinet }
-            SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-          }
-        SPARQL
-      end
-    end
+          # Ignore anything with a different jurisdiction
+          OPTIONAL { wd:%s wdt:P1001 ?legislative_jurisdiction }
+          OPTIONAL { ?minister wdt:P1001 ?executive_jurisdiction }
+          FILTER (!BOUND(?legislative_jurisdiction) || !BOUND(?executive_jurisdiction) || (?legislative_jurisdiction = ?executive_jurisdiction))
+        }
+      }
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+    }
+  SPARQL
+
+  def raw_query
+    QUERY % [@url, @url]
   end
 end
 
 class CabinetScraper < Scraped::JSON
   field :memberships do
     json[:results][:bindings].map { |result| fragment(result => Membership).to_h }
+  end
+
+  class Wikidate
+    def initialize(date, precision)
+      @date = date
+      @precision = precision
+    end
+
+    # not to_s, as this can return 'nil'
+    def as_string
+      return unless date && precision
+      return unless slice_point
+
+      date.slice(0, slice_point)
+    end
+
+    private
+
+    attr_reader :date, :precision
+
+    PRECISION_LENGTH = {
+      '9'  => 4, # year
+      '10' => 7, # month
+      '11' => 10, # day
+    }.freeze
+
+    def slice_point
+      PRECISION_LENGTH[precision]
+    end
   end
 
   class Membership < Scraped::JSON
@@ -68,11 +95,11 @@ class CabinetScraper < Scraped::JSON
     end
 
     field :start_date do
-      json.dig(:start, :value).to_s[0..9]
+      Wikidate.new(json.dig(:start, :value), json.dig(:startprecision, :value)).as_string
     end
 
     field :end_date do
-      json.dig(:end, :value).to_s[0..9]
+      Wikidate.new(json.dig(:end, :value), json.dig(:endprecision, :value)).as_string
     end
 
     field :ordinal do
