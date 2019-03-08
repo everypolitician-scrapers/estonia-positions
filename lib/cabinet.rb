@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require 'cgi'
+require 'csv'
+
 # TODO: extend Scraped::Scraper with ability to add Strategies
 class Scraped::Request::Strategy::LiveRequest
   require 'rest-client'
@@ -105,5 +108,46 @@ class CabinetScraper < Scraped::JSON
     field :ordinal do
       json.dig(:ordinal, :value).to_i
     end
+  end
+end
+
+# TODO: combine this more fully with above Strategy
+class Cabinet
+  def initialize(cabinet:)
+    @cabinet = cabinet
+  end
+
+  def positions
+    sparql(position_query % cabinet).map(&:to_h).map do |r|
+      {
+        id:    r[:item].to_s.split('/').last,
+        label: r[:itemlabel].to_s,
+        type:  'cabinet',
+      }
+    end
+  end
+
+  private
+
+  attr_reader :cabinet
+
+  WIKIDATA_SPARQL_URL = 'https://query.wikidata.org/sparql'
+
+  def sparql(query)
+    result = RestClient.get WIKIDATA_SPARQL_URL, accept: 'text/csv', params: { query: query }
+    CSV.parse(result, headers: true, header_converters: :symbol)
+  rescue RestClient::Exception => e
+    raise "Wikidata query #{query} failed: #{e.message}"
+  end
+
+  def position_query
+    <<~SPARQL
+      SELECT DISTINCT ?item ?itemLabel WHERE {
+        ?item wdt:P31/wdt:P279* wd:Q4164871 ; wdt:P361 wd:%s .
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+        # date = #{Time.now}
+      }
+      ORDER BY ?item
+    SPARQL
   end
 end
